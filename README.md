@@ -1,4 +1,5 @@
 - Install `openjdk`
 - Install `apache-spark`
-- Create a venv
+- Create a venv and activate
 - Install deps
+- `python -m unittest discover tests`
