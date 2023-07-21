@@ -1,0 +1,4 @@
+- Install `openjdk`
+- Install `apache-spark`
+- Create a venv
+- Install deps
