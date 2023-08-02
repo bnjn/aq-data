@@ -1,3 +1,4 @@
+import requests
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from pyspark.sql import SparkSession
@@ -11,6 +12,7 @@ class PollutionData:
                       .master("local[*]")
                       .appName("pollution-data")
                       .getOrCreate())
+        self.spark.sparkContext.setLogLevel('ERROR')
 
     def close(self):
         self.spark.stop()
@@ -37,3 +39,14 @@ class PollutionData:
         ])
 
         return self.spark.createDataFrame(data=output_data, schema=output_schema)
+
+    def get_pollution_data(self, api_key, bbox):
+        url = f'https://api.waqi.info/map/bounds/?token={api_key}&latlng={bbox}'
+        response = requests.get(url)
+        if response.status_code == 200:
+            if response.json()['status'] == 'ok':
+                return response.json()['data']
+            else:
+                raise ValueError(response.json()['data'])
+        else:
+            raise Exception('server error')
