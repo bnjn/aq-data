@@ -52,6 +52,6 @@ class PollutionData:
         else:
             raise Exception('server error')
 
-    def set_pollution_data(self, data_frame):
-        r = redis.StrictRedis(host='localhost', port=6379, decode_responses=True)
+    def set_pollution_data(self, data_frame, host, port, password):
+        r = redis.StrictRedis(host=host, port=port, decode_responses=True, password=password)
         return r.hset('pollution-data:123', mapping=data_frame.collect())

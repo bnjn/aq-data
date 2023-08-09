@@ -187,4 +187,7 @@ class SparkETLTestCase(unittest.TestCase):
 
         input_df = spark.createDataFrame(data=input_data, schema=input_schema)
 
-        self.assertTrue(pollution_data.set_pollution_data(input_df))
+        self.assertTrue(pollution_data.set_pollution_data(input_df, port=1234, host='localhost', password='password'))
+
+        spark.sparkContext.stop()
+        spark.stop()
