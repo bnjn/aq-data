@@ -2,6 +2,7 @@ import requests
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from pyspark.sql import SparkSession
+import redis
 
 
 class PollutionData:
@@ -52,4 +53,5 @@ class PollutionData:
             raise Exception('server error')
 
     def set_pollution_data(self, data_frame):
-        return True
+        r = redis.StrictRedis(host='localhost', port=6379, decode_responses=True)
+        return r.hset('pollution-data:123', mapping=data_frame.collect())
