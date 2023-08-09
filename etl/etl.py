@@ -50,3 +50,6 @@ class PollutionData:
                 raise ValueError(response.json()['data'])
         else:
             raise Exception('server error')
+
+    def set_pollution_data(self, data_frame):
+        return True
