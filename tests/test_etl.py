@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, Mock
+from mocks.MockRedis import MockRedis
 from etl.etl import PollutionData
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
@@ -142,3 +143,48 @@ class SparkETLTestCase(unittest.TestCase):
 
         with self.assertRaises(Exception, msg='server error'):
             pollution_data.get_pollution_data('123', 'beef')
+
+    @patch('redis.StrictRedis')
+    def test_set_pollution_data(self, mock_redis):
+        mock_set = MagicMock()
+        mock_set = MockRedis({
+            "foo": "bar"
+        })
+
+        mock_set.mock_hset = Mock(side_effect=mock_redis.mock_hset)
+
+        pollution_data = PollutionData()
+
+        spark = (SparkSession
+                 .builder
+                 .master("local[*]")
+                 .appName("Unit-tests")
+                 .getOrCreate())
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket")
+        spark.sparkContext.setLogLevel('ERROR')
+
+        input_schema = StructType([
+            StructField('lat', FloatType(), False),
+            StructField('lon', FloatType(), False),
+            StructField('uid', IntegerType(), False),
+            StructField('aqi', StringType(), False),
+            StructField('station', StructType([
+                StructField('name', StringType(), False),
+                StructField('time', StringType(), False)
+            ]), False),
+        ])
+
+        input_data = [{
+            "lat": 50.90814,
+            "lon": -1.395778,
+            "uid": 3211,
+            "aqi": "25",
+            "station": {
+                "name": "Southampton Centre, United Kingdom",
+                "time": "2023-07-20T23:00:00+09:00"
+            }
+        }]
+
+        input_df = spark.createDataFrame(data=input_data, schema=input_schema)
+
+        self.assertTrue(pollution_data.set_pollution_data(input_df))
