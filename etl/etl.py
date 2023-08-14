@@ -1,8 +1,11 @@
+import re
+
 import requests
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from pyspark.sql import SparkSession
 import redis
+import numpy as np
 
 
 class PollutionData:
@@ -19,27 +22,21 @@ class PollutionData:
         self.spark.stop()
 
     def transform_data(self, data_field):
-        input_data = data_field.collect()[0]
+        input_data = data_field.collect()
 
-        output_data = [{
-            "uid": input_data['uid'],
-            "aqi": input_data['aqi'],
-            "station_name": input_data['station']['name'],
-            "latitude": input_data['lat'],
-            "longitude": input_data['lon'],
-            "last_updated": input_data['station']['time']
-        }]
+        output_data = []
 
-        output_schema = StructType([
-            StructField('uid', IntegerType(), False),
-            StructField('aqi', StringType(), False),
-            StructField('station_name', StringType(), False),
-            StructField('latitude', FloatType(), False),
-            StructField('longitude', FloatType(), False),
-            StructField('last_updated', StringType(), False)
-        ])
+        for station in input_data:
+            output_data.append({
+                "uid": station[4],
+                "aqi": station[0],
+                "station_name": station[3]['name'],
+                "latitude": station[1],
+                "longitude": station[2],
+                "last_updated": station[3]['time']
+            })
 
-        return self.spark.createDataFrame(data=output_data, schema=output_schema)
+        return output_data
 
     def get_pollution_data(self, api_key, bbox):
         url = f'https://api.waqi.info/map/bounds/?token={api_key}&latlng={bbox}'
@@ -52,6 +49,9 @@ class PollutionData:
         else:
             raise Exception('server error')
 
-    def set_pollution_data(self, data_frame, host, port, password):
+    def set_pollution_data(self, data, host, port, password):
         r = redis.StrictRedis(host=host, port=port, decode_responses=True, password=password)
-        return r.hset('pollution-data:123', mapping=data_frame.collect())
+
+        for station in data:
+            if re.search("United Kingdom", station["station_name"]):
+                r.hset(f'{station["station_name"]}:{station["uid"]}', mapping=station)
