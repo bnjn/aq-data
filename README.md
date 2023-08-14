@@ -8,3 +8,4 @@
 ### TODO
 - clean up code and tests
 - add requirements.txt for deps (requests, redis, pyspark, dotenv)
+- figure out how to add spark back into data workflow
